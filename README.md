@@ -1,1 +1,5 @@
-# FastApi
+Dependencias
+
+pip install fastapi
+pip install uvicorn
+pip install requests
