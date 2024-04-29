@@ -1,7 +1,40 @@
-from fastapi import FastAPI, HTTPException, Path
+from fastapi import FastAPI, HTTPException, Path 
 from typing import List
+import requests
 
 app = FastAPI()
+
+def obtener_imagen_relacionada(titulo: str):
+    # Título de la experiencia
+    titulo = titulo
+
+    # Clave de API de Unsplash
+    access_key = '_dHabfpwjzCduYk7D3gGNsSgW_knoKgj7p6kugyqBUg'
+
+    # URL del endpoint del API
+    url = 'https://api.unsplash.com/search/photos'
+
+    # Parámetros de la solicitud
+    params = {'query': titulo}
+
+    # Encabezados de la solicitud con la clave de API
+    headers = {'Authorization': f'Client-ID {access_key}'}
+
+    # Realiza la solicitud al API de Unsplash
+    response = requests.get(url, params=params, headers=headers)
+
+    # Procesa la respuesta
+    if response.status_code == 200:
+        data = response.json()
+        # Obtiene la URL de la primera imagen encontrada
+        if data['results']:
+            imagen_relacionada = data['results'][0]['urls']['regular']
+            return imagen_relacionada
+        else:
+            return None
+    else:
+        # Si hay un error, retorna None
+        return None
 
 # Datos dummy para inicializar el API
 experiencias = [
@@ -67,3 +100,20 @@ async def borrar_experiencia(experiencia_id: int):
 async def experiencias_por_sala(nombre: int):
     return [exp for exp in experiencias if exp["sala"] == nombre]
 
+@app.get("/experiencias/salas/{nombre}/imagen", response_model=dict)
+async def obtener_imagen_relacionada_por_sala(nombre: int):
+    experiencia = next((exp for exp in experiencias if exp["sala"] == nombre), None)
+    if experiencia:
+        imagen_relacionada = obtener_imagen_relacionada(experiencia["nombre"])
+        if imagen_relacionada:
+            return {"imagen_relacionada": imagen_relacionada}
+        else:
+            raise HTTPException(status_code=404, detail="No se encontró una imagen relacionada para esta experiencia.")
+    else:
+        raise HTTPException(status_code=404, detail="No se encontró la experiencia en la sala especificada.")
+
+experiencias = [
+    {"id": 1, "nombre": "Experiencia 1", "sala": 1},
+    {"id": 2, "nombre": "Experiencia 2", "sala": 2},
+    {"id": 3, "nombre": "Experiencia 3", "sala": 1}
+]
